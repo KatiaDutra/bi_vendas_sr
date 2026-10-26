@@ -58,7 +58,7 @@ Para garantir a segurança das informações comerciais e o cumprimento da Lei G
 
 ## Modelagem de Dados
 
-O modelo foi construído no formato **Star Schema (esquema estrela)**, com tabelas fato para Lucratividade e Positivação ligadas a tabelas dimensão (como calendário, clientes, produtos e vendedores). Essa estrutura facilita os filtros cruzados no dashboard e melhora o desempenho das medidas em DAX.
+O modelo foi construído no formato **Star Schema (esquema estrela)**, com as tabelas fato **fVendas** (Lucratividade) e **fPositivacao** ligadas às tabelas dimensão **dCalendario**, **dProduto** e **dVendedor**. Essa estrutura facilita os filtros cruzados no dashboard e melhora o desempenho das medidas em DAX.
 
 ---
 
