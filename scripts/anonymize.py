@@ -49,6 +49,37 @@ TIPOS_DE_RELATORIO = [
 #   "ROKA COMERCIO..." (sem código)   -> não casa, tratado como nome puro
 PADRAO_CLIENTE = re.compile(r'^([\d][\d.]*)\s*-?\s*(.+)$')
 
+# ============================================================
+# VENDEDORES (LGPD): nomes de pessoas da equipe são trocados por
+# "VENDEDOR XX", usando o próprio código do vendedor no ERP. Assim o
+# resultado é sempre o mesmo em todos os meses, sem precisar de mapa.
+# LOJA e SITE são canais de venda (não pessoas) e ficam como estão,
+# porque a coluna Canal da dVendedor no Power BI depende deles.
+# O padrão exige o prefixo "Vendedor N - ", para não mexer em textos
+# como nomes de produtos (ex.: "SUPORTE COPO ... SAO RAFAEL").
+# ============================================================
+PADRAO_VENDEDOR = re.compile(
+    r'(Vendedor:?\s*)(\d+)(\s*-\s*)([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ .]*[A-Za-zÀ-ÿ])'
+)
+VENDEDORES_QUE_SAO_CANAIS = {"LOJA", "SITE"}
+
+
+def anonimizar_vendedores(df):
+    """Troca o nome de cada vendedor pessoa física por 'VENDEDOR XX'
+    em qualquer célula de texto do relatório."""
+    def troca(match):
+        prefixo, codigo, separador, nome = match.groups()
+        if nome.strip().upper() in VENDEDORES_QUE_SAO_CANAIS:
+            return match.group(0)
+        return f"{prefixo}{codigo}{separador}VENDEDOR {int(codigo):02d}"
+
+    for col in df.columns:
+        df[col] = df[col].map(
+            lambda v: PADRAO_VENDEDOR.sub(troca, v) if isinstance(v, str) else v
+        )
+    return df
+
+
 # Valores que NÃO são clientes de verdade e nunca devem ser mascarados
 VALORES_IGNORADOS = {"A VISTA", "TOTAL", "", "CLIENTE", "CÓDIGO", "STATUS", "VALOR"}
 
@@ -171,6 +202,9 @@ def anonimizar_pasta_raw():
                             continue
                         anonimizado, contador = anonimizar_valor_cliente(valor, mapa, contador)
                         df.iloc[idx, idx_nome] = anonimizado
+
+                # Anonimiza os nomes dos vendedores (LGPD)
+                df = anonimizar_vendedores(df)
 
                 caminho_saida = os.path.join(
                     pasta_processed, tipo["pasta_saida"], nome_arquivo.replace(".xls", "_anonimizado.xlsx")
